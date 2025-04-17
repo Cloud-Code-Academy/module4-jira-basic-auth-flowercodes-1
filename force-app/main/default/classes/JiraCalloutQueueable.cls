@@ -64,6 +64,22 @@ public class JiraCalloutQueueable implements Queueable, Database.AllowsCallouts 
 	 */
 	public void execute(QueueableContext context) {
 		// Your implementation goes here
+		if (calloutType == TYPE_PROJECT) {
+			String projectId = JiraAPIService.createProject(projectWrapper);
+			if (projectId != null) {
+				updateJiraProject(projectId);
+			} else {
+				System.debug('Failed to create Jira project.');
+			}
+		}
+		if (calloutType == TYPE_ISSUE) {
+			String issueKey = JiraAPIService.createIssue(issueWrapper);
+			if (issueKey != null) {
+				updateJiraIssue(issueKey);
+			} else {
+				System.debug('Failed to create Jira issue.');
+			}
+		}
 	}
 
 	/**
@@ -73,7 +89,24 @@ public class JiraCalloutQueueable implements Queueable, Database.AllowsCallouts 
 	 * with the Jira project ID returned from the API
 	 */
 	private void updateJiraProject(String jiraProjectId) {
-		// Your implementation goes here
+		Jira_Project__c projectToUpdate = [
+			SELECT ID, Project_ID__c
+			FROM Jira_Project__c
+			WHERE Id = :recordId
+			LIMIT 1
+		];
+		Logger.debug(
+			'Updating Jira project with ID: ' +
+				projectToUpdate.Id +
+				' and Project ID: ' +
+				jiraProjectId
+		);
+		Jira_Project__c projectUpdate = new Jira_Project__c(
+			Id = projectToUpdate.Id,
+			Project_ID__c = jiraProjectId
+		);
+		update projectUpdate;
+		Logger.saveLog();
 	}
 
 	/**
@@ -84,6 +117,21 @@ public class JiraCalloutQueueable implements Queueable, Database.AllowsCallouts 
 	 * Don't forget to update the Last_Updated__c field with the current time
 	 */
 	private void updateJiraIssue(String jiraIssueKey) {
-		// Your implementation goes here
+		Jira_Issue__c issueToUpdate = [
+			SELECT ID, Issue_Key__c, Last_Updated__c
+			FROM Jira_Issue__c
+			WHERE Id = :recordId
+			LIMIT 1
+		];
+		Logger.debug(
+			'Updating Jira issue with ID: ' + issueToUpdate.Id + ' and Issue Key: ' + jiraIssueKey
+		);
+		Jira_Issue__c issueUpdate = new Jira_Issue__c(
+			Id = issueToUpdate.Id,
+			Issue_Key__c = jiraIssueKey,
+			Last_Updated__c = System.now()
+		);
+		update issueUpdate;
+		Logger.saveLog();
 	}
 }

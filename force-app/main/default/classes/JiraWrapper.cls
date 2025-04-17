@@ -2,7 +2,7 @@
  * Wrapper classes for Jira entities (Project and Issue)
  */
 public class JiraWrapper {
-	private static final String LEAD_ACCOUNT_ID = '1337:0123456789-bfa0-40f4-bd28-25ae65c3e5b1';
+	private static final String LEAD_ACCOUNT_ID = '5eac6a36a4c57d0b8beb405f';
 	private static final String PROJECT_TEMPLATE_KEY = 'com.pyxis.greenhopper.jira:basic-software-development-template';
 
 	/**
@@ -64,9 +64,17 @@ public class JiraWrapper {
 		 * - description field (formatted using formatDescription method)
 		 * - Example:
 		 */
-		public Map<String, Object> generateIssuePayloadMap() {
-			// Your implementation goes here
-			return null;
+		public Map<String, Object> generateIssuePayloadMap(IssueWrapper issue) {
+			Map<String, Object> payload = new Map<String, Object>();
+			Map<String, Object> fields = new Map<String, Object>();
+			fields.put('issuetype', new Map<String, String>{ 'name' => issue.issueType });
+			fields.put('project', new Map<String, String>{ 'key' => issue.projectKey });
+			fields.put('summary', issue.summary);
+			fields.put('description', formatDescription(issue.description));
+
+			payload.put('fields', fields);
+
+			return payload;
 		}
 
 		/**
@@ -97,8 +105,23 @@ public class JiraWrapper {
 		 *   }
 		 */
 		private Map<String, Object> formatDescription(String descText) {
-			// Your implementation goes here
-			return null;
+			Map<String, Object> textObject = new Map<String, Object>{
+				'type' => 'text',
+				'text' => descText
+			};
+
+			Map<String, Object> paragraphObject = new Map<String, Object>{
+				'type' => 'paragraph',
+				'content' => new List<Map<String, Object>>{ textObject }
+			};
+
+			Map<String, Object> descriptionMap = new Map<String, Object>{
+				'type' => 'doc',
+				'version' => 1,
+				'content' => new List<Map<String, Object>>{ paragraphObject }
+			};
+
+			return descriptionMap;
 		}
 	}
 }
