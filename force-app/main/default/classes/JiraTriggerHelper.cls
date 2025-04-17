@@ -12,23 +12,28 @@ public with sharing class JiraTriggerHelper {
 		// Filter out projects that already have a Jira project ID
 		for (Jira_Project__c project : newProjects) {
 			if (String.isBlank(project.Project_ID__c)) {
-				projectsToProcess.add(project);
-			}
-		}
+				JiraCalloutQueueable callout = new JiraCalloutQueueable(
+					project.Id,
+					project.Project_Name__c,
+					project.Project_Key__c,
+					project.Description__c
+				);
 
-		// Simple bulkification by looping through each project
-		for (Jira_Project__c project : projectsToProcess) {
-			// Enqueue the callout
-			JiraCalloutQueueable callout = new JiraCalloutQueueable(
-				project.Id,
-				project.Project_Name__c,
-				project.Project_Key__c,
-				project.Description__c
+				if (!Test.isRunningTest()) {
+					System.enqueueJob(callout);
+				}
+			}
+
+			System.debug(
+				'Project to process: ' +
+					project.Id +
+					' ' +
+					project.Project_Name__c +
+					' ' +
+					project.Project_Key__c +
+					' ' +
+					project.Description__c
 			);
-
-			if (!Test.isRunningTest()) {
-				System.enqueueJob(callout);
-			}
 		}
 	}
 
@@ -44,6 +49,32 @@ public with sharing class JiraTriggerHelper {
 	 * 4. Don't enqueue if Test.isRunningTest() is true
 	 */
 	public static void processIssueAfterInsert(List<Jira_Issue__c> newIssues) {
-		// Your implementation goes here
+		for (Jira_Issue__c issue : newIssues) {
+			if (String.isBlank(issue.Issue_Key__c) && String.isNotBlank(issue.Project_Key__c)) {
+				// Enqueue the callout
+				JiraCalloutQueueable callout = new JiraCalloutQueueable(
+					issue.Id,
+					issue.Project_Key__c,
+					issue.Summary__c,
+					issue.Description__c,
+					issue.Issue_Type__c
+				);
+
+				if (!Test.isRunningTest()) {
+					System.enqueueJob(callout);
+				}
+			}
+			Logger.debug(
+				'Jira Issue to process: ' +
+					issue.Id +
+					' ' +
+					issue.Summary__c +
+					' ' +
+					issue.Description__c +
+					' ' +
+					issue.Issue_Type__c
+			);
+			Logger.saveLog();
+		}
 	}
 }
